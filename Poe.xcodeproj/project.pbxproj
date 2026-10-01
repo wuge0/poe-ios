@@ -10,9 +10,26 @@
 		A1B2C3D40000000000000005 /* Poe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Poe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A1B2C3D40000000000000010 /* Exceptions for "Poe" folder in "Poe" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A1B2C3D40000000000000006 /* Poe */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A1B2C3D40000000000000001 /* Poe */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A1B2C3D40000000000000010 /* Exceptions for "Poe" folder in "Poe" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
 			path = Poe;
 			sourceTree = "<group>";
 		};
