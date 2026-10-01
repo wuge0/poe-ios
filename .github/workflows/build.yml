@@ -1,0 +1,99 @@
+name: Build Poe
+
+# 构建 poe.com iOS 客户端（WKWebView 套壳）
+#
+# 走公开仓库 → macOS runner 完全免费
+# 产物为无签名 IPA，TrollStore 可直接安装
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: '构建后发布 Release（产出直链）'
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+
+permissions:
+  contents: write        # 创建 Release 需要写权限
+
+jobs:
+  build:
+    name: Build (macOS)
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain versions
+        run: |
+          xcodebuild -version
+          sw_vers
+          echo "--- 可用 Xcode ---"
+          ls -1 /Applications | grep -i '^Xcode' || true
+
+      - name: Build unsigned IPA
+        run: |
+          chmod +x tools/make-ipa.sh
+          ./tools/make-ipa.sh
+
+      - name: Verify IPA
+        run: |
+          set -euo pipefail
+          IPA="$GITHUB_WORKSPACE/dist/Poe.ipa"
+          test -f "$IPA" || { echo "缺少产物 $IPA"; exit 1; }
+
+          echo "=== 产物信息 ==="
+          ls -lh "$IPA"
+
+          echo "=== 解包校验 ==="
+          rm -rf /tmp/verify && mkdir -p /tmp/verify
+          unzip -q "$IPA" -d /tmp/verify
+          ls -la /tmp/verify/Payload/
+
+          APP="/tmp/verify/Payload/Poe.app"
+          test -d "$APP" || { echo "缺少 Poe.app"; exit 1; }
+
+          echo "--- Bundle ID ---"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Info.plist"
+
+          echo "--- 显示名 ---"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleDisplayName" "$APP/Info.plist"
+
+          echo "--- 架构 ---"
+          lipo -info "$APP/Poe"
+
+          echo "--- 资源 ---"
+          test -f "$APP/Assets.car" && echo "Assets.car 存在 ✓" || echo "缺少 Assets.car"
+          test -f "$APP/Info.plist" && echo "Info.plist 存在 ✓"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Poe-ipa
+          path: dist/Poe.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish Release
+        if: ${{ github.event_name == 'push' || inputs.publish_release }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="build-$(date -u +%Y%m%d-%H%M%S)"
+          IPA="dist/Poe.ipa"
+
+          test -f "$IPA" || { echo "没有可发布的产物"; exit 1; }
+          ls -lh "$IPA"
+
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Poe 客户端 $TAG" \
+            --notes "poe.com iOS 客户端（WKWebView 套壳）。TrollStore 安装：在手机上点开本页下方的 Poe.ipa 资源链接，下载完成后 TrollStore 会自动识别并安装。注意：Google/Apple 账号不支持在 App 内登录，请在登录页选择使用邮箱继续。" \
+            "$IPA"
+
+          echo "=== Release 创建完成: $TAG ==="
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url -q .url
