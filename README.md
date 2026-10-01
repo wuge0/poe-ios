@@ -48,6 +48,8 @@ GitHub Actions 自动构建（`.github/workflows/build.yml`）：
 gh workflow run build.yml -R <owner>/poe-ios
 ```
 
+推送到 `main` 也会自动触发。
+
 产物：
 - **Release 直链**（推荐，长期保留）
 - Actions Artifacts（保留 30 天）
@@ -58,6 +60,18 @@ gh workflow run build.yml -R <owner>/poe-ios
 ./tools/make-ipa.sh
 # 产物: dist/Poe.ipa
 ```
+
+## 实测数据
+
+| 指标 | 值 |
+|---|---|
+| IPA 体积 | **48 KB** |
+| 构建耗时 | **1 分钟** |
+| 可执行文件 | Mach-O 64-bit arm64，112 KB |
+| 最低系统 | iOS 15.0 |
+| 签名 | 无（TrollStore 直接安装） |
+
+对比 Gecko 方案（linux.do 项目）：包体约 100 MB、构建 60–90 分钟。
 
 ## 安装
 
